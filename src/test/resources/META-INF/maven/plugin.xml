@@ -83,6 +83,27 @@
                     <editable>true</editable>
                     <description>publish release notes to github (or just log to console)</description>
                 </parameter>
+                <parameter>
+                    <name>templateFilePath</name>
+                    <type>java.lang.String</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>path to release notes template file used to generate release notes for site</description>
+                </parameter>
+                <parameter>
+                    <name>releaseDate</name>
+                    <type>java.lang.String</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>date of release</description>
+                </parameter>
+                <parameter>
+                    <name>releaseNotesFilePath</name>
+                    <type>java.lang.String</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>path (directories) to store</description>
+                </parameter>
             </parameters>
             <configuration>
                 <releaseVersion implementation="java.lang.String" default-value="2.29.1"/>
@@ -91,7 +112,9 @@
                 <githubPassword implementation="java.lang.String">${property}</githubPassword>
                 <githubToken implementation="java.lang.String">${property}</githubToken>
                 <publishToGithub implementation="java.lang.Boolean" default-value="false"/>
-<!--                <withPropertyAndDefault implementation="java.lang.String" default-value="default">${property}</withPropertyAndDefault>-->
+                <templateFilePath implementation="java.lang.String" default-value="default">${property}</templateFilePath>
+                <releaseDate implementation="java.lang.String">${property}</releaseDate>
+                <releaseNotesFilePath implementation="java.lang.String" default-value="target/release-notes">${property}</releaseNotesFilePath>
             </configuration>
         </mojo>
     </mojos>

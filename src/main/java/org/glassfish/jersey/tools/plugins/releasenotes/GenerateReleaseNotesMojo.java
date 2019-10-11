@@ -27,6 +27,11 @@ import org.kohsuke.github.GitHub;
 import org.kohsuke.github.PagedIterable;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GenerateReleaseNotesMojo extends AbstractMojo {
@@ -37,6 +42,12 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
     private String githubToken;
     private String githubPassword;
     private Boolean publishToGithub;
+    private String templateFilePath;
+    private String releaseDate;
+    private String releaseNotesFilePath;
+
+    private static final String RELEASE_DATE_PATTERN = "@RELEASE_DATE@";
+    private static final String LATEST_VERSION_PATTERN = "@LATEST_VERSION@";
 
     public String getReleaseVersion() {
         return releaseVersion;
@@ -72,6 +83,8 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
                             getLog().info("Publishing release notes to GitHub");
                             publishReleaseNotes(releaseNotes, releaseVersion, repository);
                         }
+                        storeReleaseNotes(releaseNotes, templateFilePath, releaseVersion,
+                                releaseDate, releaseNotesFilePath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -86,17 +99,48 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
         final StringBuffer releaseNotes = new StringBuffer();
         final String pullRequestFormat = "<li>[<a href='%s'>Pull %d</a>] - %s</li>\n";
         final String issueFormat = "<li>[<a href='%s'>Issue %d</a>] - %s</li>\n";
-        final List<GHIssue> issues =repository.getIssues(GHIssueState.CLOSED, milestone);
+        final List<String> releaseNotesLines = new ArrayList<>();
+        final List<GHIssue> issues = repository.getIssues(GHIssueState.CLOSED, milestone);
         for (final GHIssue issue : issues) {
-            releaseNotes.append(String.format(issue.isPullRequest() ? pullRequestFormat: issueFormat,
+            releaseNotesLines.add(String.format(issue.isPullRequest() ? pullRequestFormat : issueFormat,
                     issue.getHtmlUrl(), issue.getNumber(), issue.getTitle()));
         }
-
+        Collections.sort(releaseNotesLines);
+        releaseNotesLines.forEach(releaseNotes::append);
         return releaseNotes.toString();
     }
 
     private static void publishReleaseNotes(String releaseNotes, String releaseVersion, GHRepository repository) throws IOException {
         repository.createRelease(releaseVersion).name(releaseVersion).body(releaseNotes).create();
+    }
+
+    private static void storeReleaseNotes(String releaseNotes, String templateFilePath,
+                                          String releaseVersion, String releaseDate,
+                                          String releaseNotesFilePath) throws IOException {
+        if (Files.notExists(Paths.get(templateFilePath))) {
+            return;
+        }
+        final List<String> notesLines = new ArrayList<>();
+        final List<String> lines = Files.readAllLines(Paths.get(templateFilePath), Charset.defaultCharset());
+        for (final String line : lines) {
+            if (line.contains(RELEASE_DATE_PATTERN)) {
+                notesLines.add(line.replace(RELEASE_DATE_PATTERN, releaseDate));
+            } else if (line.contains(LATEST_VERSION_PATTERN)) {
+                notesLines.add(line.replace(LATEST_VERSION_PATTERN, releaseVersion));
+            } else if (line.contains("<h2>Previous releases</h2>")) {
+                notesLines.add("<h2>Pull requests and issues</h2>\n<ul>");
+                notesLines.add(releaseNotes);
+                notesLines.add("</ul>");
+                notesLines.add(line);
+            } else if (line.contains("<ul>")) {
+                notesLines.add(line);
+                notesLines.add(String.format("    <li><a href=\"%s.html\">Jersey %s Release Notes</a></li>", releaseVersion, releaseVersion));
+            } else {
+                notesLines.add(line);
+            }
+        }
+        Files.createDirectories(Paths.get(releaseNotesFilePath));
+        Files.write(Paths.get(String.format("%s/%s.html", releaseNotesFilePath, releaseVersion)), notesLines, Charset.defaultCharset());
     }
 
     private void validateParameters() throws MojoFailureException {
