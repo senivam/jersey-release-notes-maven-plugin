@@ -19,6 +19,10 @@ package org.glassfish.jersey.tools.plugins.releasenotes;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.kohsuke.github.GHIssue;
 import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHMilestone;
@@ -31,39 +35,34 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class GenerateReleaseNotesMojo extends AbstractMojo {
+@Mojo(name = "release-notes", defaultPhase = LifecyclePhase.POST_SITE)
+public class ReleaseNotesMojo extends AbstractMojo {
 
+    @Parameter(required = true, defaultValue = "2.29.1")
     private String releaseVersion;
+    @Parameter(required = true, defaultValue = "eclipse-ee4j/jersey")
     private String githubApiUrl;
+    @Parameter(required = true)
     private String githubLogin;
+    @Parameter(required = false)
     private String githubToken;
+    @Parameter(required = false)
     private String githubPassword;
+    @Parameter(required = true, defaultValue = "false")
     private Boolean publishToGithub;
+    @Parameter(required = true, defaultValue = "true")
+    private Boolean dryRun;
+    @Parameter(required = true)
     private String templateFilePath;
+    @Parameter(required = true)
     private String releaseDate;
+    @Parameter(required = true, defaultValue = "target/release-notes")
     private String releaseNotesFilePath;
 
     private static final String RELEASE_DATE_PATTERN = "@RELEASE_DATE@";
     private static final String LATEST_VERSION_PATTERN = "@LATEST_VERSION@";
-
-    public String getReleaseVersion() {
-        return releaseVersion;
-    }
-
-    public void setReleaseVersion(String releaseVersion) {
-        this.releaseVersion = releaseVersion;
-    }
-
-    public String getGithubApiUrl() {
-        return githubApiUrl;
-    }
-
-    public void setGithubApiUrl(String githubApiUrl) {
-        this.githubApiUrl = githubApiUrl;
-    }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
         validateParameters();
@@ -79,12 +78,14 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
                         final String releaseNotes = prepareReleaseNotes(milestone, repository);
                         getLog().info("Prepared release notes:");
                         getLog().info(releaseNotes);
-                        if (Boolean.TRUE.equals(publishToGithub)) {
+                        if (Boolean.TRUE.equals(publishToGithub) && Boolean.FALSE.equals(dryRun)) {
                             getLog().info("Publishing release notes to GitHub");
                             publishReleaseNotes(releaseNotes, releaseVersion, repository);
+                        } else {
+                            getLog().info("Publishing to GitHub is disabled, skipping");
                         }
                         storeReleaseNotes(releaseNotes, templateFilePath, releaseVersion,
-                                releaseDate, releaseNotesFilePath);
+                                releaseDate, releaseNotesFilePath, dryRun, getLog());
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -101,12 +102,9 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
         final String issueFormat = "<li>[<a href='%s'>Issue %d</a>] - %s</li>\n";
         final List<String> releaseNotesLines = new ArrayList<>();
         final List<GHIssue> issues = repository.getIssues(GHIssueState.CLOSED, milestone);
-        for (final GHIssue issue : issues) {
-            releaseNotesLines.add(String.format(issue.isPullRequest() ? pullRequestFormat : issueFormat,
-                    issue.getHtmlUrl(), issue.getNumber(), issue.getTitle()));
-        }
-        Collections.sort(releaseNotesLines);
-        releaseNotesLines.forEach(releaseNotes::append);
+        issues.stream().map(issue -> String.format(issue.isPullRequest() ? pullRequestFormat : issueFormat,
+                issue.getHtmlUrl(), issue.getNumber(), issue.getTitle())).forEach(releaseNotesLines::add);
+        releaseNotesLines.stream().sorted().forEach(releaseNotes::append);
         return releaseNotes.toString();
     }
 
@@ -116,7 +114,8 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
 
     private static void storeReleaseNotes(String releaseNotes, String templateFilePath,
                                           String releaseVersion, String releaseDate,
-                                          String releaseNotesFilePath) throws IOException {
+                                          String releaseNotesFilePath,
+                                          Boolean dryRun, Log log) throws IOException {
         if (Files.notExists(Paths.get(templateFilePath))) {
             return;
         }
@@ -139,15 +138,21 @@ public class GenerateReleaseNotesMojo extends AbstractMojo {
                 notesLines.add(line);
             }
         }
-        Files.createDirectories(Paths.get(releaseNotesFilePath));
-        Files.write(Paths.get(String.format("%s/%s.html", releaseNotesFilePath, releaseVersion)), notesLines, Charset.defaultCharset());
+        if (Boolean.FALSE.equals(dryRun)) {
+            log.info(String.format("Storing release notes to file %s/%s.html", releaseNotesFilePath, releaseVersion));
+            Files.createDirectories(Paths.get(releaseNotesFilePath));
+            Files.write(Paths.get(String.format("%s/%s.html", releaseNotesFilePath, releaseVersion)), notesLines, Charset.defaultCharset());
+        } else {
+            log.info("Prepared release notes are not stored to file due to dryRun mode");
+            log.info(String.format("File pathe to store release notes is: %s/%s.html", releaseNotesFilePath, releaseVersion));
+        }
     }
 
     private void validateParameters() throws MojoFailureException {
-        if (releaseVersion == null || releaseVersion.length() == 0) {
+        if (releaseVersion == null) {
             throw new MojoFailureException("releaseVersion shall be provided");
         }
-        if (githubLogin == null || releaseVersion.length() == 0) {
+        if (githubLogin == null) {
             throw new MojoFailureException("githubLogin shall be provided");
         }
 

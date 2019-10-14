@@ -46,7 +46,7 @@ public class GenerateReleaseNotesMojoTest extends AbstractMojoTestCase {
     public void testGenerateReleaseNotesMojo() throws Exception {
         MavenProject project = readMavenProject( new File( "src/test/resources" ) );
 
-        GenerateReleaseNotesMojo mojo = (GenerateReleaseNotesMojo) lookupConfiguredMojo( project, "release-notes" );
+        ReleaseNotesMojo mojo = (ReleaseNotesMojo) lookupConfiguredMojo( project, "release-notes" );
 
         assertNotNull( mojo );
         mojo.execute();
