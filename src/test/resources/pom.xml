@@ -46,7 +46,7 @@
                     <githubLogin>[login]</githubLogin>
                     <githubToken>[token]</githubToken>
 <!--                    <publishToGithub>true</publishToGithub>-->
-                    <templateFilePath>src/main/templates/release-note.html</templateFilePath>
+                    <templateFilePath>src/test/templates/release-note.html</templateFilePath>
                     <releaseDate>12-10-2019</releaseDate>
                     <dryRun>false</dryRun>
                 </configuration>
