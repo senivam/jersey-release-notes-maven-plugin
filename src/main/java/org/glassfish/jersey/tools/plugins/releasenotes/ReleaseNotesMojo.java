@@ -126,7 +126,7 @@ public class ReleaseNotesMojo extends AbstractMojo {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new MojoExecutionException(e.getMessage(), e);
         }
     }
 
@@ -148,7 +148,7 @@ public class ReleaseNotesMojo extends AbstractMojo {
             storeReleaseNotes(releaseNotes, templateFilePath, releaseVersion,
                     releaseDate, releaseNotesFilePath, dryRun, log);
         } catch (IOException e) {
-            throw new MojoExecutionException("", e);
+            throw new MojoExecutionException(e.getMessage(), e);
         }
     }
 
@@ -201,7 +201,7 @@ public class ReleaseNotesMojo extends AbstractMojo {
             Files.write(Paths.get(String.format("%s/%s.html", releaseNotesFilePath, releaseVersion)), notesLines, Charset.defaultCharset());
         } else {
             log.info("Prepared release notes are not stored to file due to dryRun mode");
-            log.info(String.format("File pathe to store release notes is: %s/%s.html", releaseNotesFilePath, releaseVersion));
+            log.info(String.format("File path to store release notes is: %s/%s.html", releaseNotesFilePath, releaseVersion));
         }
     }
 
@@ -209,12 +209,13 @@ public class ReleaseNotesMojo extends AbstractMojo {
         if (releaseVersion == null) {
             throw new MojoFailureException("releaseVersion shall be provided");
         }
-        if (Boolean.FALSE.equals(dryRun) && githubLogin == null) {
-            throw new MojoFailureException("githubLogin shall be provided");
-        }
-
-        if (Boolean.FALSE.equals(dryRun) && (githubPassword == null && githubToken == null)) {
-            throw new MojoFailureException("either githubPassword or githubToken shall be provided");
+        if (Boolean.FALSE.equals(dryRun) || Boolean.TRUE.equals(publishToGithub)) {
+            if (githubLogin == null) {
+                throw new MojoFailureException("githubLogin shall be provided");
+            }
+            if (githubPassword == null && githubToken == null) {
+                throw new MojoFailureException("Either githubPassword or githubToken shall be provided");
+            }
         }
     }
 }
