@@ -12,12 +12,12 @@
 [//]: # "  "
 [//]: # " SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 "
 
-###Release Notes maven plugin
+### Release Notes maven plugin
 
 Runs for post-site mvn target, generates release notes for given template file, 
 stores generated release notes in target/release-notes/{versionNumber}.html file (path of output file can be changed) 
 
-###Input parameters:
+### Input parameters:
  
  - releaseVersion - (String) - version to be used everywhere where it occurs. Like file name, replacement tag, release tag etc. 
  supplied in for of '2.29.1' 
