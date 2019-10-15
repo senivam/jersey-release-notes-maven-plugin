@@ -21,7 +21,6 @@ import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
-import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.junit.Before;
@@ -44,24 +43,23 @@ public class GenerateReleaseNotesMojoTest extends AbstractMojoTestCase {
 
     @Test
     public void testGenerateReleaseNotesMojo() throws Exception {
-        MavenProject project = readMavenProject( new File( "src/test/resources" ) );
+        final MavenProject project = readMavenProject(new File("src/test/resources"));
 
-        ReleaseNotesMojo mojo = (ReleaseNotesMojo) lookupConfiguredMojo( project, "release-notes" );
+        final ReleaseNotesMojo mojo = (ReleaseNotesMojo) lookupConfiguredMojo(project, "release-notes");
 
-        assertNotNull( mojo );
+        assertNotNull(mojo);
         mojo.execute();
     }
 
-    protected MavenProject readMavenProject( File basedir )
-            throws ProjectBuildingException, Exception
-    {
-        File pom = new File( basedir, "pom.xml" );
-        MavenExecutionRequest request = new DefaultMavenExecutionRequest();
-        request.setBaseDirectory( basedir );
-        ProjectBuildingRequest configuration = request.getProjectBuildingRequest();
-        configuration.setRepositorySession( new DefaultRepositorySystemSession() );
-        MavenProject project = lookup( ProjectBuilder.class ).build( pom, configuration ).getProject();
-        assertNotNull( project );
+    protected MavenProject readMavenProject(File basedir)
+            throws Exception {
+        final File pom = new File(basedir, "pom.xml");
+        final MavenExecutionRequest request = new DefaultMavenExecutionRequest();
+        request.setBaseDirectory(basedir);
+        final ProjectBuildingRequest configuration = request.getProjectBuildingRequest();
+        configuration.setRepositorySession(new DefaultRepositorySystemSession());
+        final MavenProject project = lookup(ProjectBuilder.class).build(pom, configuration).getProject();
+        assertNotNull(project);
         return project;
     }
 }

@@ -112,37 +112,9 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
-                    <compilerArguments>
-                        <!--<Werror />-->
-                        <!-- TODO work towards eliminating all warnings in order to be able to enable the -Xlint option -->
-                        <!--Xlint/-->
-                    </compilerArguments>
                     <showWarnings>false</showWarnings>
                     <fork>false</fork>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M3</version>
-                <configuration>
-                    <argLine>-Djava.net.useSystemProxies=true -Dhttp_proxy=http://www-proxy-lon.uk.oracle.com:80 -Dhttps_proxy=http://www-proxy-lon.uk.oracle.com:80</argLine>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-logger-api</artifactId>
-                        <version>3.0.0-M3</version>
-                        <!-- to get around bug https://github.com/junit-team/junit5/issues/1367 -->
-                        <optional>true</optional>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-api</artifactId>
-                        <version>3.0.0-M3</version>
-                        <optional>true</optional>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>
